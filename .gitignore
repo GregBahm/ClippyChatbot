@@ -1,0 +1,11 @@
+﻿ClippyChatbotUnity/Library
+ClippyChatbotUnity/Temp
+ClippyChatbotUnity/UserSettings
+ClippyChatbotUnity/Logs
+ClippyChatbotUnity/obj
+*.csproj
+.vsconfig
+*.sln
+.vs
+ClippyChatbotUnity/Assets/Speech/SubscriptionKey.txt
+ClippyChatbotUnity/Assets/Speech/SubscriptionKey.txt.meta
