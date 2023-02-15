@@ -1,8 +1,10 @@
 using Microsoft.CognitiveServices.Speech;
+using Microsoft.CognitiveServices.Speech.Audio;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using TMPro;
 using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +17,8 @@ public class MainScript : MonoBehaviour
     private TextAsset subscriptionKeyFile;
     [SerializeField]
     private bool doTheThing;
+    [SerializeField]
+    private TextMeshProUGUI statusTextbox;
 
     private string subscriptionKey;
     private const string subscriptionRegion = "westus";
@@ -22,9 +26,9 @@ public class MainScript : MonoBehaviour
     private object speechToTextThreadLocker = new object();
     private object textToSpeechThreadLocker = new object();
 
-    private string message;
+    private string lastHeardSpeech;
     private bool newMessageReceived;
-    private bool waitingForRecording;
+    private bool listeningToUser;
     private bool waitingForSpeak;
     private bool audioSourceNeedStop;
 
@@ -38,14 +42,12 @@ public class MainScript : MonoBehaviour
         subscriptionKey = subscriptionKeyFile.text;
         speechConfig = SpeechConfig.FromSubscription(subscriptionKey, subscriptionRegion);
 
-        // The default format is RIFF, which has a riff header.
-        // We are playing the audio in memory as audio clip, which doesn't require riff header.
-        // So we need to set the format to raw (24KHz for better quality).
         speechConfig.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Raw24Khz16BitMonoPcm);
-
-        // Creates a speech synthesizer.
-        // Make sure to dispose the synthesizer after use!
+        speechConfig.SpeechSynthesisVoiceName = "en-US-JasonNeural";
         synthesizer = new SpeechSynthesizer(speechConfig, null);
+
+        newMessageReceived = true;
+        lastHeardSpeech = "I am clippy and I am talking";
     }
 
     private void Update()
@@ -62,7 +64,7 @@ public class MainScript : MonoBehaviour
             if(newMessageReceived)
             {
                 newMessageReceived = false;
-                ProcessNewMessage(message);
+                ProcessNewMessage(lastHeardSpeech);
             }
         }
 
@@ -70,6 +72,19 @@ public class MainScript : MonoBehaviour
         {
             audioSource.Stop();
             audioSourceNeedStop = false;
+        }
+        UpdateStatusMessage();
+    }
+
+    private void UpdateStatusMessage()
+    {
+        if(listeningToUser)
+        {
+            statusTextbox.text = "Listening";
+        }
+        else
+        {
+            statusTextbox.text = "Clippy heard:\n" + lastHeardSpeech;
         }
     }
 
@@ -79,8 +94,8 @@ public class MainScript : MonoBehaviour
         {
             waitingForSpeak = true;
         }
-
-        using (var result = synthesizer.StartSpeakingTextAsync(message).Result)
+        string ssmlMessage = GetSsmlMessage(message);
+        using (var result = synthesizer.StartSpeakingSsmlAsync(ssmlMessage).Result)
         {
             AudioDataStream audioDataStream = AudioDataStream.FromResult(result);
             var audioClip = AudioClip.Create(
@@ -113,10 +128,16 @@ public class MainScript : MonoBehaviour
                         audioSourceNeedStop = true;
                     }
                 });
-
             audioSource.clip = audioClip;
             audioSource.Play();
         }
+    }
+
+    private string GetSsmlMessage(string message)
+    {
+        string header = @"<speak xmlns=""http://www.w3.org/2001/10/synthesis"" xmlns:mstts=""http://www.w3.org/2001/mstts"" xmlns:emo=""http://www.w3.org/2009/10/emotionml"" version=""1.0"" xml:lang=""en-US""><voice name=""en-US-JasonNeural""><prosody rate=""30%"" pitch=""25%"">";
+        string footer = @"</prosody></voice></speak>";
+        return header + message + footer;
     }
 
     async void BeginListenToSpeech()
@@ -126,7 +147,7 @@ public class MainScript : MonoBehaviour
         {
             lock (speechToTextThreadLocker)
             {
-                waitingForRecording = true;
+                listeningToUser = true;
             }
 
             // For long-running multi-utterance recognition, use StartContinuousRecognitionAsync() instead.
@@ -144,8 +165,8 @@ public class MainScript : MonoBehaviour
             }
             lock (speechToTextThreadLocker)
             {
-                message = newMessage;
-                waitingForRecording = false;
+                lastHeardSpeech = newMessage;
+                listeningToUser = false;
                 newMessageReceived = true;
             }
         }
