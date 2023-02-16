@@ -27,7 +27,7 @@ public class MainScript : MonoBehaviour
     private object textToSpeechThreadLocker = new object();
 
     private string lastHeardSpeech;
-    private bool questionComplete;
+    private bool unprocessedSpeech;
     private bool audioSourceNeedStop;
 
     private const int SampleRate = 24000;
@@ -35,8 +35,6 @@ public class MainScript : MonoBehaviour
     private SpeechRecognizer recognizer;
     private SpeechConfig speechConfig;
     private SpeechSynthesizer synthesizer;
-
-    private KeywordRecognitionModel keywordModel;
 
     private ClippyStatus status;
 
@@ -47,17 +45,32 @@ public class MainScript : MonoBehaviour
         subscriptionKey = subscriptionKeyFile.text;
         speechConfig = SpeechConfig.FromSubscription(subscriptionKey, subscriptionRegion);
 
-        string keywordFilePath = Application.streamingAssetsPath + "/heyClippyRecognition.table";
-        keywordModel = KeywordRecognitionModel.FromFile(keywordFilePath);
-        recognizer = new SpeechRecognizer(speechConfig);
-        recognizer.StartKeywordRecognitionAsync(keywordModel);
-        recognizer.Recognized += Recognizer_Recognized;
+        InitializeSpeechRecognizer();
+        InitializeSpeechSynthesizer();
+
+        //HaveClippySay("Wazzup bitches. Clippy in the hizz-ouse.");
+    }
+
+    private void InitializeSpeechSynthesizer()
+    {
 
         speechConfig.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Raw24Khz16BitMonoPcm);
         speechConfig.SpeechSynthesisVoiceName = "en-US-JasonNeural";
         synthesizer = new SpeechSynthesizer(speechConfig, null);
+    }
 
-        //HaveClippySay("Wazzup bitches. Clippy in the hizz-ouse.");
+    private void InitializeSpeechRecognizer()
+    {
+
+        string heyClippyFilePath = Application.streamingAssetsPath + "/heyClippyRecognition.table";
+        KeywordRecognitionModel heyClippyModel = KeywordRecognitionModel.FromFile(heyClippyFilePath);
+
+        string goAwayFilePath = Application.streamingAssetsPath + "/heyClippyRecognition.table";
+        KeywordRecognitionModel goAwayModel = KeywordRecognitionModel.FromFile(goAwayFilePath);
+
+        recognizer = new SpeechRecognizer(speechConfig);
+        recognizer.StartContinuousRecognitionAsync();
+        recognizer.Recognized += Recognizer_Recognized;
     }
 
     private void Recognizer_Recognized(object sender, SpeechRecognitionEventArgs e)
@@ -66,7 +79,7 @@ public class MainScript : MonoBehaviour
         lastHeardSpeech = e.Result.Text;
         if(e.Result.Reason == ResultReason.RecognizedSpeech)
         {
-            questionComplete = true;
+            unprocessedSpeech = true;
             status = ClippyStatus.ThinkingOfWhatToSay;
         }
         statusMessage = "Hearing: " + lastHeardSpeech;
@@ -75,9 +88,9 @@ public class MainScript : MonoBehaviour
     private void Update()
     {
         statusTextbox.text = statusMessage;
-        if(questionComplete)
+        if(unprocessedSpeech)
         {
-            questionComplete = false;
+            unprocessedSpeech = false;
             SendQuestionToOpenAi();
         }
         if(status == ClippyStatus.ThinkingOfWhatToSay)
@@ -152,12 +165,12 @@ public class MainScript : MonoBehaviour
         string message = lastHeardSpeech.ToLower().Replace("hey clippy", "");
         openAi.Ask(message);
     }
+}
 
-    private enum ClippyStatus
-    {
-        PatientlyWaiting,
-        Listening,
-        ThinkingOfWhatToSay,
-        Speaking
-    }
+public enum ClippyStatus
+{
+    PatientlyWaiting,
+    Listening,
+    ThinkingOfWhatToSay,
+    Speaking
 }

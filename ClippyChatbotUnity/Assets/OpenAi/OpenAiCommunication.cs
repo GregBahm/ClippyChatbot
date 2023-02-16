@@ -30,7 +30,7 @@ public class OpenAiCommunication : MonoBehaviour
         {
             model = modelName,
             prompt = message,
-            temperature = 0.7f,
+            temperature = 0.9f,
             max_tokens = 256,
             top_p = 1,
             frequency_penalty = 0,
