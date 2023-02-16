@@ -57,7 +57,7 @@ public class MainScript : MonoBehaviour
         speechConfig.SpeechSynthesisVoiceName = "en-US-JasonNeural";
         synthesizer = new SpeechSynthesizer(speechConfig, null);
 
-        HaveClippySay("Wazzup bitches. Clippy in the hizz-ouse.");
+        //HaveClippySay("Wazzup bitches. Clippy in the hizz-ouse.");
     }
 
     private void Recognizer_Recognized(object sender, SpeechRecognitionEventArgs e)
