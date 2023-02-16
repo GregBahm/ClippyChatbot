@@ -16,7 +16,7 @@ public class MainScript : MonoBehaviour
     [SerializeField]
     private TextAsset subscriptionKeyFile;
     [SerializeField]
-    private TextAsset keywordRecognitionFile;
+    private OpenAiCommunication openAi;
     [SerializeField]
     private TextMeshProUGUI statusTextbox;
 
@@ -27,9 +27,7 @@ public class MainScript : MonoBehaviour
     private object textToSpeechThreadLocker = new object();
 
     private string lastHeardSpeech;
-    private bool newMessageReceived;
-    private bool listeningToUser;
-    private bool waitingForSpeak;
+    private bool questionComplete;
     private bool audioSourceNeedStop;
 
     private const int SampleRate = 24000;
@@ -40,12 +38,17 @@ public class MainScript : MonoBehaviour
 
     private KeywordRecognitionModel keywordModel;
 
+    private ClippyStatus status;
+
+    private string statusMessage;
+
     void Start()
     {
         subscriptionKey = subscriptionKeyFile.text;
         speechConfig = SpeechConfig.FromSubscription(subscriptionKey, subscriptionRegion);
 
-        keywordModel = KeywordRecognitionModel.FromFile(keywordRecognitionFile.text);
+        string keywordFilePath = Application.streamingAssetsPath + "/heyClippyRecognition.table";
+        keywordModel = KeywordRecognitionModel.FromFile(keywordFilePath);
         recognizer = new SpeechRecognizer(speechConfig);
         recognizer.StartKeywordRecognitionAsync(keywordModel);
         recognizer.Recognized += Recognizer_Recognized;
@@ -54,24 +57,38 @@ public class MainScript : MonoBehaviour
         speechConfig.SpeechSynthesisVoiceName = "en-US-JasonNeural";
         synthesizer = new SpeechSynthesizer(speechConfig, null);
 
-        newMessageReceived = true;
-        lastHeardSpeech = "I am clippy and I am talking";
+        HaveClippySay("Wazzup bitches. Clippy in the hizz-ouse.");
     }
 
     private void Recognizer_Recognized(object sender, SpeechRecognitionEventArgs e)
     {
-        lastHeardSpeech = "oh shit whutup.";
+        status = ClippyStatus.Listening;
+        lastHeardSpeech = e.Result.Text;
+        if(e.Result.Reason == ResultReason.RecognizedSpeech)
+        {
+            questionComplete = true;
+            status = ClippyStatus.ThinkingOfWhatToSay;
+        }
+        statusMessage = "Hearing: " + lastHeardSpeech;
     }
 
     private void Update()
     {
-        lock (speechToTextThreadLocker)
+        statusTextbox.text = statusMessage;
+        if(questionComplete)
         {
-            // can use waitingForRecording here
-            if(newMessageReceived)
+            questionComplete = false;
+            SendQuestionToOpenAi();
+        }
+        if(status == ClippyStatus.ThinkingOfWhatToSay)
+        {
+            statusMessage = "Thinking on: " + lastHeardSpeech;
+            if(!openAi.InProgress)
             {
-                newMessageReceived = false;
-                ProcessNewMessage(lastHeardSpeech);
+                status = ClippyStatus.Speaking;
+
+                statusMessage = "Saying: " + openAi.LastReceivedResponse;
+                HaveClippySay(openAi.LastReceivedResponse);
             }
         }
 
@@ -80,27 +97,10 @@ public class MainScript : MonoBehaviour
             audioSource.Stop();
             audioSourceNeedStop = false;
         }
-        UpdateStatusMessage();
     }
 
-    private void UpdateStatusMessage()
+    private void HaveClippySay(string message)
     {
-        if(listeningToUser)
-        {
-            statusTextbox.text = "Listening";
-        }
-        else
-        {
-            statusTextbox.text = "Clippy heard:\n" + lastHeardSpeech;
-        }
-    }
-
-    private void ProcessNewMessage(string message)
-    {
-        lock (textToSpeechThreadLocker)
-        {
-            waitingForSpeak = true;
-        }
         string ssmlMessage = GetSsmlMessage(message);
         using (var result = synthesizer.StartSpeakingSsmlAsync(ssmlMessage).Result)
         {
@@ -140,10 +140,24 @@ public class MainScript : MonoBehaviour
         }
     }
 
-    private string GetSsmlMessage(string message)
+    private static string GetSsmlMessage(string message)
     {
         string header = @"<speak xmlns=""http://www.w3.org/2001/10/synthesis"" xmlns:mstts=""http://www.w3.org/2001/mstts"" xmlns:emo=""http://www.w3.org/2009/10/emotionml"" version=""1.0"" xml:lang=""en-US""><voice name=""en-US-JasonNeural""><prosody rate=""30%"" pitch=""25%"">";
         string footer = @"</prosody></voice></speak>";
         return header + message + footer;
+    }
+
+    private void SendQuestionToOpenAi()
+    {
+        string message = lastHeardSpeech.ToLower().Replace("hey clippy", "");
+        openAi.Ask(message);
+    }
+
+    private enum ClippyStatus
+    {
+        PatientlyWaiting,
+        Listening,
+        ThinkingOfWhatToSay,
+        Speaking
     }
 }
