@@ -16,7 +16,7 @@ public class MainScript : MonoBehaviour
     [SerializeField]
     private TextAsset subscriptionKeyFile;
     [SerializeField]
-    private bool doTheThing;
+    private TextAsset keywordRecognitionFile;
     [SerializeField]
     private TextMeshProUGUI statusTextbox;
 
@@ -34,13 +34,21 @@ public class MainScript : MonoBehaviour
 
     private const int SampleRate = 24000;
 
+    private SpeechRecognizer recognizer;
     private SpeechConfig speechConfig;
     private SpeechSynthesizer synthesizer;
+
+    private KeywordRecognitionModel keywordModel;
 
     void Start()
     {
         subscriptionKey = subscriptionKeyFile.text;
         speechConfig = SpeechConfig.FromSubscription(subscriptionKey, subscriptionRegion);
+
+        keywordModel = KeywordRecognitionModel.FromFile(keywordRecognitionFile.text);
+        recognizer = new SpeechRecognizer(speechConfig);
+        recognizer.StartKeywordRecognitionAsync(keywordModel);
+        recognizer.Recognized += Recognizer_Recognized;
 
         speechConfig.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Raw24Khz16BitMonoPcm);
         speechConfig.SpeechSynthesisVoiceName = "en-US-JasonNeural";
@@ -50,14 +58,13 @@ public class MainScript : MonoBehaviour
         lastHeardSpeech = "I am clippy and I am talking";
     }
 
+    private void Recognizer_Recognized(object sender, SpeechRecognitionEventArgs e)
+    {
+        lastHeardSpeech = "oh shit whutup.";
+    }
+
     private void Update()
     {
-        if(doTheThing)
-        {
-            doTheThing = false;
-            BeginListenToSpeech();
-        }
-
         lock (speechToTextThreadLocker)
         {
             // can use waitingForRecording here
@@ -138,37 +145,5 @@ public class MainScript : MonoBehaviour
         string header = @"<speak xmlns=""http://www.w3.org/2001/10/synthesis"" xmlns:mstts=""http://www.w3.org/2001/mstts"" xmlns:emo=""http://www.w3.org/2009/10/emotionml"" version=""1.0"" xml:lang=""en-US""><voice name=""en-US-JasonNeural""><prosody rate=""30%"" pitch=""25%"">";
         string footer = @"</prosody></voice></speak>";
         return header + message + footer;
-    }
-
-    async void BeginListenToSpeech()
-    {
-
-        using (var recognizer = new SpeechRecognizer(speechConfig))
-        {
-            lock (speechToTextThreadLocker)
-            {
-                listeningToUser = true;
-            }
-
-            // For long-running multi-utterance recognition, use StartContinuousRecognitionAsync() instead.
-            var result = await recognizer.RecognizeOnceAsync().ConfigureAwait(false);
-
-            // Checks result.
-            string newMessage = string.Empty;
-            if (result.Reason == ResultReason.RecognizedSpeech)
-            {
-                newMessage = result.Text;
-            }
-            else
-            {
-                newMessage = "I have no clue what you said.";
-            }
-            lock (speechToTextThreadLocker)
-            {
-                lastHeardSpeech = newMessage;
-                listeningToUser = false;
-                newMessageReceived = true;
-            }
-        }
     }
 }
