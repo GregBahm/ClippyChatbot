@@ -9,6 +9,7 @@ using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(OpenAiCommunication))]
 public class MainScript : MonoBehaviour
 {
     [SerializeField]
@@ -16,9 +17,8 @@ public class MainScript : MonoBehaviour
     [SerializeField]
     private TextAsset subscriptionKeyFile;
     [SerializeField]
-    private OpenAiCommunication openAi;
-    [SerializeField]
     private TextMeshProUGUI statusTextbox;
+    private OpenAiCommunication openAi;
 
     private string subscriptionKey;
     private const string subscriptionRegion = "westus";
@@ -28,7 +28,7 @@ public class MainScript : MonoBehaviour
 
     private string lastHeardSpeech;
     private bool unprocessedSpeech;
-    private bool audioSourceNeedStop;
+    private bool stopAudioSource;
 
     private const int SampleRate = 24000;
 
@@ -36,19 +36,21 @@ public class MainScript : MonoBehaviour
     private SpeechConfig speechConfig;
     private SpeechSynthesizer synthesizer;
 
-    private ClippyStatus status;
+    public ClippyStatus Status { get; private set; }
 
     private string statusMessage;
 
     void Start()
     {
+        openAi = GetComponent<OpenAiCommunication>();
         subscriptionKey = subscriptionKeyFile.text;
         speechConfig = SpeechConfig.FromSubscription(subscriptionKey, subscriptionRegion);
 
         InitializeSpeechRecognizer();
         InitializeSpeechSynthesizer();
 
-        //HaveClippySay("Wazzup bitches. Clippy in the hizz-ouse.");
+        //recognizer.StartContinuousRecognitionAsync();
+        HaveClippySay("Hi, I'm clippy. Where do you want to go today?");
     }
 
     private void InitializeSpeechSynthesizer()
@@ -65,24 +67,34 @@ public class MainScript : MonoBehaviour
         string heyClippyFilePath = Application.streamingAssetsPath + "/heyClippyRecognition.table";
         KeywordRecognitionModel heyClippyModel = KeywordRecognitionModel.FromFile(heyClippyFilePath);
 
-        string goAwayFilePath = Application.streamingAssetsPath + "/heyClippyRecognition.table";
+        string goAwayFilePath = Application.streamingAssetsPath + "/goAwayRecognition.table";
         KeywordRecognitionModel goAwayModel = KeywordRecognitionModel.FromFile(goAwayFilePath);
 
         recognizer = new SpeechRecognizer(speechConfig);
-        recognizer.StartContinuousRecognitionAsync();
+        recognizer.Recognizing += Recognizer_Recognizing;
         recognizer.Recognized += Recognizer_Recognized;
+    }
+
+    private void Recognizer_Recognizing(object sender, SpeechRecognitionEventArgs e)
+    {
+        if(Status == ClippyStatus.PatientlyWaiting)
+        {
+            statusMessage = "Hearing: " + e.Result.Text; ;
+            Status = ClippyStatus.Listening;
+        }
     }
 
     private void Recognizer_Recognized(object sender, SpeechRecognitionEventArgs e)
     {
-        status = ClippyStatus.Listening;
+        Status = ClippyStatus.Listening;
         lastHeardSpeech = e.Result.Text;
-        if(e.Result.Reason == ResultReason.RecognizedSpeech)
+        if(e.Result.Reason == ResultReason.RecognizedSpeech && !string.IsNullOrEmpty(lastHeardSpeech))
         {
             unprocessedSpeech = true;
-            status = ClippyStatus.ThinkingOfWhatToSay;
+            recognizer.StopContinuousRecognitionAsync();
+            Status = ClippyStatus.ThinkingOfWhatToSay;
         }
-        statusMessage = "Hearing: " + lastHeardSpeech;
+        statusMessage = "Heard: " + lastHeardSpeech;
     }
 
     private void Update()
@@ -93,29 +105,32 @@ public class MainScript : MonoBehaviour
             unprocessedSpeech = false;
             SendQuestionToOpenAi();
         }
-        if(status == ClippyStatus.ThinkingOfWhatToSay)
+        if(Status == ClippyStatus.ThinkingOfWhatToSay)
         {
             statusMessage = "Thinking on: " + lastHeardSpeech;
             if(!openAi.InProgress)
             {
-                status = ClippyStatus.Speaking;
+                Status = ClippyStatus.Speaking;
 
                 statusMessage = "Saying: " + openAi.LastReceivedResponse;
                 HaveClippySay(openAi.LastReceivedResponse);
             }
         }
 
-        if (audioSourceNeedStop)
+        if (stopAudioSource)
         {
             audioSource.Stop();
-            audioSourceNeedStop = false;
+            Status = ClippyStatus.PatientlyWaiting;
+            statusMessage = "Awaiting text";
+            recognizer.StartContinuousRecognitionAsync();
+            stopAudioSource = false;
         }
     }
 
     private void HaveClippySay(string message)
     {
         string ssmlMessage = GetSsmlMessage(message);
-        using (var result = synthesizer.StartSpeakingSsmlAsync(ssmlMessage).Result)
+        using (SpeechSynthesisResult result = synthesizer.StartSpeakingSsmlAsync(ssmlMessage).Result)
         {
             AudioDataStream audioDataStream = AudioDataStream.FromResult(result);
             var audioClip = AudioClip.Create(
@@ -145,7 +160,7 @@ public class MainScript : MonoBehaviour
                     if (readBytes == 0)
                     {
                         Thread.Sleep(200); // Leave some time for the audioSource to finish playback
-                        audioSourceNeedStop = true;
+                        stopAudioSource = true;
                     }
                 });
             audioSource.clip = audioClip;
