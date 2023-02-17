@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.42105857, g: 0.4647616, b: 0.5262543, a: 1}
+  m_IndirectSpecularColor: {r: 0.21088137, g: 0.21661976, b: 0.23948966, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1022,7 +1022,10 @@ MonoBehaviour:
   audioSource: {fileID: 737763184}
   subscriptionKeyFile: {fileID: 4900000, guid: 60f4768b371743644b59d82e71f73697, type: 3}
   statusTextbox: {fileID: 426133609}
+  shutUpClippyButton: {fileID: 0}
   delay: 0.5
+  startingGameObjects: []
+  beginButton: {fileID: 0}
 --- !u!4 &1787510665
 Transform:
   m_ObjectHideFlags: 0

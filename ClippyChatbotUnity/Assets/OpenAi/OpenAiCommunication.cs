@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityLibrary;
@@ -42,6 +43,8 @@ public class OpenAiCommunication : MonoBehaviour
         byte[] postData = System.Text.Encoding.UTF8.GetBytes(jsonData);
 
         UnityWebRequest request = UnityWebRequest.Post(url, jsonData);
+        request.uploadHandler.Dispose();
+        request.downloadHandler.Dispose();
         request.uploadHandler = new UploadHandlerRaw(postData);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Content-Type", "application/json");
