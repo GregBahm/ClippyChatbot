@@ -22,7 +22,7 @@ public class ClippyHolgraphicPlacement : MonoBehaviour
     private void Update()
     {
         PlaceClippy();
-        SpawnOrDespawnClippy();
+        //SpawnOrDespawnClippy();
     }
 
     private void SpawnOrDespawnClippy()

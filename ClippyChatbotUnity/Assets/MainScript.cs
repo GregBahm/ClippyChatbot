@@ -18,6 +18,10 @@ public class MainScript : MonoBehaviour
     private TextAsset subscriptionKeyFile;
     [SerializeField]
     private TextMeshProUGUI statusTextbox;
+
+    [SerializeField]
+    private GameObject shutUpClippyButton;
+
     private OpenAiCommunication openAi;
 
     private string subscriptionKey;
@@ -40,6 +44,11 @@ public class MainScript : MonoBehaviour
 
     private string statusMessage;
 
+
+    [SerializeField]
+    private float delay = .5f;
+    private bool introduced;
+
     void Start()
     {
         openAi = GetComponent<OpenAiCommunication>();
@@ -48,9 +57,6 @@ public class MainScript : MonoBehaviour
 
         InitializeSpeechRecognizer();
         InitializeSpeechSynthesizer();
-
-        //recognizer.StartContinuousRecognitionAsync();
-        HaveClippySay("Hi, I'm clippy. Where do you want to go today?");
     }
 
     private void InitializeSpeechSynthesizer()
@@ -99,6 +105,17 @@ public class MainScript : MonoBehaviour
 
     private void Update()
     {
+        if(!introduced)
+        {
+            delay -= Time.deltaTime;
+            if(delay < 0)
+            {
+                Status = ClippyStatus.Speaking;
+                introduced = true;
+                HaveClippySay("Hi, I'm clippy. Where do you want to go today?");
+            }
+        }
+
         statusTextbox.text = statusMessage;
         if(unprocessedSpeech)
         {
@@ -117,6 +134,8 @@ public class MainScript : MonoBehaviour
             }
         }
 
+        shutUpClippyButton.SetActive(Status == ClippyStatus.Speaking);
+
         if (stopAudioSource)
         {
             audioSource.Stop();
@@ -125,6 +144,10 @@ public class MainScript : MonoBehaviour
             recognizer.StartContinuousRecognitionAsync();
             stopAudioSource = false;
         }
+    }
+    public void ShutUpClippy()
+    {
+        stopAudioSource = true;
     }
 
     private void HaveClippySay(string message)
@@ -177,7 +200,7 @@ public class MainScript : MonoBehaviour
 
     private void SendQuestionToOpenAi()
     {
-        string message = lastHeardSpeech.ToLower().Replace("hey clippy", "");
+        string message = lastHeardSpeech.ToLower().Replace("clippy", "");
         openAi.Ask(message);
     }
 }
