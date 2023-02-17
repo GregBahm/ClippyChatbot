@@ -100,7 +100,7 @@ public class MainScript : MonoBehaviour
     {
         if(Status == ClippyStatus.PatientlyWaiting)
         {
-            statusMessage = "Hearing: " + e.Result.Text; ;
+            statusMessage = "Hearing:\n\n" + e.Result.Text; ;
             Status = ClippyStatus.Listening;
         }
     }
@@ -115,7 +115,7 @@ public class MainScript : MonoBehaviour
             recognizer.StopContinuousRecognitionAsync();
             Status = ClippyStatus.ThinkingOfWhatToSay;
         }
-        statusMessage = "Heard: " + lastHeardSpeech;
+        statusMessage = "Heard:\n\n" + lastHeardSpeech;
     }
 
     private void Update()
@@ -127,6 +127,8 @@ public class MainScript : MonoBehaviour
             {
                 Status = ClippyStatus.Speaking;
                 introduced = true;
+
+                statusMessage = "\"Hi, I'm clippy. Where do you want to go today?\"";
                 HaveClippySay("Hi, I'm clippy. Where do you want to go today?");
             }
         }
@@ -139,12 +141,12 @@ public class MainScript : MonoBehaviour
         }
         if(Status == ClippyStatus.ThinkingOfWhatToSay)
         {
-            statusMessage = "Thinking on: " + lastHeardSpeech;
+            statusMessage = "Thinking about:\n\n" + lastHeardSpeech;
             if(!openAi.InProgress)
             {
                 Status = ClippyStatus.Speaking;
 
-                statusMessage = "Saying: " + openAi.LastReceivedResponse;
+                statusMessage = "\"" + openAi.LastReceivedResponse + "\"";
                 HaveClippySay(openAi.LastReceivedResponse);
             }
         }

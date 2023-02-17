@@ -64,6 +64,9 @@ public class OpenAiCommunication : MonoBehaviour
                 LastReceivedResponse = generatedText;
             }
             InProgress = false;
+            request.uploadHandler.Dispose();
+            request.downloadHandler.Dispose();
+            request.Dispose();
         };
     }
 }
