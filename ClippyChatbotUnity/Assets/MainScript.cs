@@ -140,7 +140,7 @@ public class MainScript : MonoBehaviour
         {
             audioSource.Stop();
             Status = ClippyStatus.PatientlyWaiting;
-            statusMessage = "Awaiting text";
+            statusMessage = "";
             recognizer.StartContinuousRecognitionAsync();
             stopAudioSource = false;
         }
