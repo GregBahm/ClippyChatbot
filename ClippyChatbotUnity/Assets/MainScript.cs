@@ -1,13 +1,7 @@
 using Microsoft.CognitiveServices.Speech;
-using Microsoft.CognitiveServices.Speech.Audio;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading;
 using TMPro;
-using UnityEditor.VersionControl;
 using UnityEngine;
-using UnityEngine.UI;
 
 [RequireComponent(typeof(OpenAiCommunication))]
 public class MainScript : MonoBehaviour
@@ -85,11 +79,11 @@ public class MainScript : MonoBehaviour
     private void InitializeSpeechRecognizer()
     {
 
-        string heyClippyFilePath = Application.streamingAssetsPath + "/heyClippyRecognition.table";
-        KeywordRecognitionModel heyClippyModel = KeywordRecognitionModel.FromFile(heyClippyFilePath);
-
-        string goAwayFilePath = Application.streamingAssetsPath + "/goAwayRecognition.table";
-        KeywordRecognitionModel goAwayModel = KeywordRecognitionModel.FromFile(goAwayFilePath);
+        //string heyClippyFilePath = Application.streamingAssetsPath + "/heyClippyRecognition.table";
+        //KeywordRecognitionModel heyClippyModel = KeywordRecognitionModel.FromFile(heyClippyFilePath);
+        //
+        //string goAwayFilePath = Application.streamingAssetsPath + "/goAwayRecognition.table";
+        //KeywordRecognitionModel goAwayModel = KeywordRecognitionModel.FromFile(goAwayFilePath);
 
         recognizer = new SpeechRecognizer(speechConfig);
         recognizer.Recognizing += Recognizer_Recognizing;
