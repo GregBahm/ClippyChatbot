@@ -129,7 +129,7 @@ public class MainScript : MonoBehaviour
             {
                 Status = ClippyStatus.Speaking;
 
-                statusMessage = "Saying: " + openAi.LastReceivedResponse;
+                statusMessage = "";
                 HaveClippySay(openAi.LastReceivedResponse);
             }
         }
