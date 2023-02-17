@@ -44,10 +44,15 @@ public class MainScript : MonoBehaviour
 
     private string statusMessage;
 
-
     [SerializeField]
     private float delay = .5f;
     private bool introduced;
+
+    private bool doBegin;
+    [SerializeField]
+    private GameObject[] startingGameObjects;
+    [SerializeField]
+    private GameObject beginButton;
 
     void Start()
     {
@@ -57,6 +62,16 @@ public class MainScript : MonoBehaviour
 
         InitializeSpeechRecognizer();
         InitializeSpeechSynthesizer();
+    }
+
+    public void BeginClippy()
+    {
+        doBegin = true;
+        foreach (var item in startingGameObjects)
+        {
+            item.SetActive(true);
+        }
+        beginButton.SetActive(false);
     }
 
     private void InitializeSpeechSynthesizer()
@@ -105,7 +120,7 @@ public class MainScript : MonoBehaviour
 
     private void Update()
     {
-        if(!introduced)
+        if(!introduced && doBegin)
         {
             delay -= Time.deltaTime;
             if(delay < 0)
@@ -129,7 +144,7 @@ public class MainScript : MonoBehaviour
             {
                 Status = ClippyStatus.Speaking;
 
-                statusMessage = "";
+                statusMessage = "Saying: " + openAi.LastReceivedResponse;
                 HaveClippySay(openAi.LastReceivedResponse);
             }
         }
