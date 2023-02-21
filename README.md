@@ -1,5 +1,7 @@
 # ClippyChatbot
 
+![](GifForTheReadMe.gif)
+
 Talk to Clippy, and with the magic of Azure cognative speech services and OpenAI, hear him talk back.
 
 # To Run from Source
