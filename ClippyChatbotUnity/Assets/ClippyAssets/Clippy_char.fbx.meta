@@ -3,7 +3,27 @@ guid: 0bad97985c14eab488c409ea3f1fcf60
 ModelImporter:
   serializedVersion: 21300
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: EyeBrows
+    second: {fileID: 2100000, guid: 0a09ea7bca6ca2540a9f17a1d815e825, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: EyeLids
+    second: {fileID: 2100000, guid: e07650e956af5b14fad54f81b4d89b56, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Eyes
+    second: {fileID: 2100000, guid: 1153eab6f7788f54fb84fabcc3251ab2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: lambert3
+    second: {fileID: 2100000, guid: d49ea047cc726f44dbeb9539a9b53712, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
